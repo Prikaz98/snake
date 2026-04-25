@@ -10,7 +10,7 @@
 #define SNAKE_SPEED		 5
 #define DELTA_TIME_MS		 1000 / FPS
 #define DELTA_SNAKE_TIME_MS	 1000 / SNAKE_SPEED
-#define SNAKE_MAX_LEN            60
+#define SNAKE_MAX_LEN            ((WINDOW_HEIGHT / SQUARE_SIZE) * (WINDOW_WIDTH / SQUARE_SIZE))
 #define PADDING                  1
 
 typedef enum {
