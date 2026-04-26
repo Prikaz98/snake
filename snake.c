@@ -3,15 +3,16 @@
 #include <stdbool.h>
 #include <SDL3/SDL.h>
 
-#define WINDOW_WIDTH		 800
-#define WINDOW_HEIGHT		 600
-#define SQUARE_SIZE		 20
-#define FPS			 60
-#define SNAKE_SPEED		 5
-#define DELTA_TIME_MS		 1000 / FPS
-#define DELTA_SNAKE_TIME_MS	 1000 / SNAKE_SPEED
-#define SNAKE_MAX_LEN            ((WINDOW_HEIGHT / SQUARE_SIZE) * (WINDOW_WIDTH / SQUARE_SIZE))
-#define PADDING                  1
+#define WINDOW_WIDTH		800
+#define WINDOW_HEIGHT		600
+#define SQUARE_SIZE		25
+#define FPS			60
+#define SNAKE_SPEED		5
+#define DELTA_TIME_MS		1000 / FPS
+#define DELTA_SNAKE_TIME_MS	1000 / SNAKE_SPEED
+#define PADDING                 2
+
+#define SNAKE_MAX_LEN ((int)(((float)WINDOW_HEIGHT / SQUARE_SIZE) * ((float)WINDOW_WIDTH / SQUARE_SIZE)))
 
 typedef enum {
 	PLAY = 1,
@@ -22,12 +23,22 @@ typedef struct {
 	int x, y;
 } Vec2;
 
+typedef struct {
+	int x, y, z;
+} Vec3;
+
+#define rgb_as_vec3(rgb) (Vec3){rgb >> 16, rgb >> 8 & 0xFF, (Uint8) rgb & 0xFFFF};
+
+static Vec3 BACKGROUND_COLOR	= rgb_as_vec3(0x000000);
+static Vec3 SNAKE_COLOR		= rgb_as_vec3(0xFFFFFF);
+static Vec3 APPLE_COLOR		= rgb_as_vec3(0xFF0000);
+
 int mod(int a, int b)
 {
 	return (a%b+b)%b;
 }
 
-int fill_snake(Vec2 *snake, int snake_len, int x, int y)
+int grow_snake(Vec2 *snake, int snake_len, int x, int y)
 {
 	if (snake_len < SNAKE_MAX_LEN) {
 		snake[snake_len].x = x;
@@ -61,15 +72,15 @@ int main(void)
 	SDL_Event event = {0};
 	SDL_Keycode current_direction = SDLK_RIGHT;
 	int snake_len = 0;
-	Vec2 snake[SNAKE_MAX_LEN] = {0};
-	SDL_FRect snake_front[SNAKE_MAX_LEN] = {0};
+	Vec2 snake[SNAKE_MAX_LEN] = {};
+	SDL_FRect snake_front[SNAKE_MAX_LEN] = {};
 	Vec2 apple = {0};
 	SDL_FRect apple_front = {0};
 
-	const int center_coordinate_x = WINDOW_WIDTH / 2 - SQUARE_SIZE;
-	const int center_coordinate_y = WINDOW_HEIGHT / 2 - SQUARE_SIZE;
+	const int center_coordinate_x = ((int)((float)WINDOW_WIDTH) / 2 - SQUARE_SIZE);
+	const int center_coordinate_y = ((int)((float)WINDOW_HEIGHT) / 2 - SQUARE_SIZE);
 
-	snake_len = fill_snake(snake, snake_len, center_coordinate_x, center_coordinate_y);
+	snake_len = grow_snake(snake, snake_len, center_coordinate_x, center_coordinate_y);
 	new_apple(&apple);
 
 	Uint32 snake_next_move = SDL_GetTicks();
@@ -108,7 +119,11 @@ int main(void)
 			}
 		}
 
-		SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0);
+		SDL_SetRenderDrawColor(renderer,
+				       BACKGROUND_COLOR.x,
+				       BACKGROUND_COLOR.y,
+				       BACKGROUND_COLOR.z,
+				       0);
 		SDL_RenderClear(renderer);
 
 		if (status == PLAY && snake_next_move < SDL_GetTicks()) {
@@ -134,7 +149,7 @@ int main(void)
 			}
 
 			if (apple.x == snake[0].x && apple.y == snake[0].y) {
-				snake_len = fill_snake(snake, snake_len, apple.x, apple.y);
+				snake_len = grow_snake(snake, snake_len, apple.x, apple.y);
 				new_apple(&apple);
 			}
 
@@ -162,13 +177,15 @@ int main(void)
 			}
 		}
 
-		SDL_SetRenderDrawColor(renderer, 0xFF, 0x0, 0x0, 0);
-
+		SDL_SetRenderDrawColor(renderer,
+				       APPLE_COLOR.x,
+				       APPLE_COLOR.y,
+				       APPLE_COLOR.z,
+				       0);
 		apple_front.x = apple.x + PADDING;
 		apple_front.y = apple.y + PADDING;
 		apple_front.w = SQUARE_SIZE - PADDING;
 		apple_front.h = SQUARE_SIZE - PADDING;
-
 		SDL_RenderFillRect(renderer, &apple_front);
 
 		for (int i = 0; i < snake_len; ++i) {
@@ -178,7 +195,11 @@ int main(void)
 			snake_front[i].h = SQUARE_SIZE - PADDING;
 		}
 
-		SDL_SetRenderDrawColor(renderer, 0x0, 0x0, 0x0, 0);
+		SDL_SetRenderDrawColor(renderer,
+				       SNAKE_COLOR.x,
+				       SNAKE_COLOR.y,
+				       SNAKE_COLOR.z,
+				       0);
 		SDL_RenderFillRects(renderer, snake_front, snake_len);
 
 		SDL_RenderPresent(renderer);
